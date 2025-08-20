@@ -22,7 +22,7 @@ Build an intelligent legal assistant that helps lawyers, law students, and clien
 
 * **Function Calling:**
 
-  * Functions like `search_case_law(query)`, `summarize_contract(uploaded_file)`, or `draft_nda(parties, duration)`.
+  * Functions like `search_case_law(query)`, `summarize_contract(uploaded_file)`.
   * Example: When a user uploads a contract, the assistant calls a function to extract clauses and outputs a summary.
 
 * **RAG (Retrieval-Augmented Generation):**
