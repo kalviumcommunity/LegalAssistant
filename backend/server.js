@@ -4,7 +4,27 @@ require('dotenv').config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
-async function zeroShotPrompt(prompt) {
+async function oneShotPromptLegal() {
+  const example = `
+Q: Summarize this clause: "Either party may terminate this agreement with 30 days' written notice."
+A: The agreement can be ended by either party with a 30-day written notice.
+`;
+
+  const newQuestion = `
+Q: Summarize this clause: "The service provider shall indemnify the client against any third-party claims arising from negligence."
+A:
+`;
+
+  const prompt = `
+You are a legal assistant. Use the example format to summarize legal clauses clearly.
+
+Example:
+${example}
+
+Now answer the following:
+${newQuestion}
+`;
+
   try {
     const response = await axios.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
@@ -22,16 +42,11 @@ async function zeroShotPrompt(prompt) {
         }
       }
     );
-    return response.data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log("Legal One-shot Response:", response.data.candidates?.[0]?.content?.parts?.[0]?.text || '');
   } catch (err) {
-    console.error('Zero-shot Prompt Error:', err.response?.data || err.message);
-    throw new Error('Gemini LLM request failed');
+    console.error('Legal One-shot Prompt Error:', err.response?.data || err.message);
   }
 }
 
-// Example Usage
-(async () => {
-  const prompt = "Explain the difference between zero-shot, one-shot, and few-shot prompting in simple terms.";
-  const output = await zeroShotPrompt(prompt);
-  console.log("Zero-shot Response:", output);
-})();
+oneShotPromptLegal();
