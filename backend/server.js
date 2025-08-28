@@ -4,10 +4,13 @@ require('dotenv').config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
-async function oneShotPromptLegal() {
-  const example = `
+async function multiShotPromptLegal() {
+  const examples = `
 Q: Summarize this clause: "Either party may terminate this agreement with 30 days' written notice."
 A: The agreement can be ended by either party with a 30-day written notice.
+
+Q: Summarize this clause: "Confidential information shall not be disclosed to third parties without prior written consent."
+A: Confidential information cannot be shared with third parties unless written consent is obtained.
 `;
 
   const newQuestion = `
@@ -16,10 +19,10 @@ A:
 `;
 
   const prompt = `
-You are a legal assistant. Use the example format to summarize legal clauses clearly.
+You are a legal assistant. Use the examples to summarize legal clauses clearly.
 
-Example:
-${example}
+Examples:
+${examples}
 
 Now answer the following:
 ${newQuestion}
@@ -43,10 +46,10 @@ ${newQuestion}
       }
     );
 
-    console.log("Legal One-shot Response:", response.data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+    console.log("Legal Multi-shot Response:", response.data.candidates?.[0]?.content?.parts?.[0]?.text || '');
   } catch (err) {
-    console.error('Legal One-shot Prompt Error:', err.response?.data || err.message);
+    console.error('Legal Multi-shot Prompt Error:', err.response?.data || err.message);
   }
 }
 
-oneShotPromptLegal();
+multiShotPromptLegal();
