@@ -1,55 +1,30 @@
-const axios = require('axios');
-require('dotenv').config();
+app.post('/api/query', async (req, res) => {
+  const { query, topK, temperature, topP, modelTopK } = req.body; 
+  // 'topK' here refers to how many document chunks to retrieve
+  // 'modelTopK' is used for generationConfig.topK
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-
-async function multiShotPromptLegal() {
-  const examples = `
-Q: Summarize this clause: "Either party may terminate this agreement with 30 days' written notice."
-A: The agreement can be ended by either party with a 30-day written notice.
-
-Q: Summarize this clause: "Confidential information shall not be disclosed to third parties without prior written consent."
-A: Confidential information cannot be shared with third parties unless written consent is obtained.
-`;
-
-  const newQuestion = `
-Q: Summarize this clause: "The service provider shall indemnify the client against any third-party claims arising from negligence."
-A:
-`;
-
-  const prompt = `
-You are a legal assistant. Use the examples to summarize legal clauses clearly.
-
-Examples:
-${examples}
-
-Now answer the following:
-${newQuestion}
-`;
+  if (!query) return res.status(400).json({ error: 'query required' });
 
   try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ]
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-goog-api-key': GEMINI_API_KEY
-        }
-      }
+    const qEmb = await geminiEmbedding(query);
+    const store = loadVectorStore();
+    const scored = store.map(item => ({ ...item, score: dot(qEmb, item.embedding) }));
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, topK || 3);
+    const context = top.map(t => t.text).join('\n\n');
+
+    const prompt = `Answer using CONTEXT. If not found, say "not found in documents".\n\nCONTEXT:\n${context}\n\nQUESTION:\n${query}`;
+
+    const answer = await geminiChat(
+      prompt,
+      500,
+      temperature ?? 0.7,
+      topP ?? 0.9,
+      modelTopK ?? 40
     );
 
-    console.log("Legal Multi-shot Response:", response.data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+    res.json({ answer, results: top });
   } catch (err) {
-    console.error('Legal Multi-shot Prompt Error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'query failed', details: err.message });
   }
-}
-
-multiShotPromptLegal();
+});
